@@ -1,0 +1,13 @@
+federated:
+  num_epochs: 3
+  server_address: 127.0.0.1:8088
+  num_clients: 3
+  fraction_fit: 1.0
+  fraction_evaluate: 1.0
+  min_fit_clients: 4
+  min_evaluate_clients: 3
+  min_available_clients: 4
+  proximal_mu: 0.1
+  client_lr: 0.001
+  local_epochs: 1
+  strategy: FedProx
