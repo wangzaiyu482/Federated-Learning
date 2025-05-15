@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>启动服务端 - 联邦学习配置工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36D399',
+                        neutral: '#F8FAFC',
+                        dark: '#1E293B'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-server text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">联邦学习服务端启动</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="UpdateYaml.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-cogs mr-1"></i>配置上传
+                </a>
+                <a href="startServer.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-server mr-1"></i>服务端启动
+                </a>
+                <a href="paramsVisualization.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-chart-line mr-1"></i>参数可视化
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto pt-24 pb-16 px-4">
+        <!-- 服务端控制卡片 -->
+        <div class="bg-white rounded-xl p-6 mb-8 card-shadow">
+            <h3 class="text-md font-semibold mb-4 pb-2 border-b border-gray-100 flex items-center">
+                <i class="fa fa-server text-primary mr-2"></i>服务端控制
+            </h3>
+            <div class="space-y-4">
+                <div class="flex space-x-4">
+    <button id="start-server-btn" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-primary">启动服务端</button>
+    <button id="stop-server-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-red-500">停止服务端</button>
+</div>
+<div id="server-status" class="mt-4 text-sm text-gray-600">服务端状态: 未启动</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2025 联邦学习配置可视化工具 | 设计与开发</p>
+        </div>
+    </footer>
+
+    <!-- 成功提示 -->
+    <div id="success-toast" class="fixed bottom-4 right-4 bg-secondary text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-16 opacity-0 transition-all duration-300 flex items-center">
+        <i class="fa fa-check-circle mr-2"></i>
+        <span>操作成功!</span>
+    </div>
+
+    <script>
+        // 初始化页面逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 启动服务端按钮点击事件
+const startBtn = document.getElementById('start-server-btn');
+const stopBtn = document.getElementById('stop-server-btn');
+const statusText = document.getElementById('server-status');
+const successToast = document.getElementById('success-toast');
+
+startBtn.addEventListener('click', function() {
+    fetch('http://localhost:12345/run-script')
+        .then(response => response.json())
+        .then(data => {
+            statusText.textContent = '服务端状态: 已启动';
+            statusText.classList.remove('text-gray-600');
+            statusText.classList.add('text-green-500');
+            successToast.classList.remove('translate-y-16', 'opacity-0');
+            setTimeout(() => {
+                successToast.classList.add('translate-y-16', 'opacity-0');
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusText.textContent = '服务端状态: 启动失败';
+            statusText.classList.remove('text-gray-600');
+            statusText.classList.add('text-red-500');
+        });
+});
+        });
+    </script>
+</body>
+</html>

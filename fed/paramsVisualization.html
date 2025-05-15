@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>参数可视化 - 联邦学习配置工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36D399',
+                        neutral: '#F8FAFC',
+                        dark: '#1E293B'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-server text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">联邦学习结果可视化</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="UpdateYaml.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-cogs mr-1"></i>配置上传
+                </a>
+                <a href="startServer.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-server mr-1"></i>服务端启动
+                </a>
+                <a href="paramsVisualization.html" class="text-dark hover:text-primary transition-custom">
+                    <i class="fa fa-chart-line mr-1"></i>参数可视化
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto pt-24 pb-16 px-4">
+        <!-- 算法选择卡片 -->
+        <div class="bg-white rounded-xl p-6 mb-8 card-shadow">
+            <h3 class="text-md font-semibold mb-4 pb-2 border-b border-gray-100 flex items-center">
+                <i class="fa fa-chart-line text-primary mr-2"></i>算法选择
+            </h3>
+            <div class="flex items-center space-x-4">
+                <select id="algorithm-select" class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="FedAvg">FedAvg</option>
+                    <option value="FedProx">FedProx</option>
+                    <option value="FedMedian">FedMedian</option>
+                    <option value="FedTrimmedAvg">FedTrimmedAvg</option>
+                </select>
+                <button id="load-data-btn" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-primary">加载数据</button>
+            </div>
+        </div>
+
+        <!-- 图表展示区域 -->
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <h3 class="text-md font-semibold mb-4 pb-2 border-b border-gray-100 flex items-center">
+                <i class="fa fa-chart-bar text-primary mr-2"></i>训练指标
+            </h3>
+            <div class="flex flex-wrap gap-4 mb-4">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" id="select-all">
+                    <span>全选</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" name="metric" value="accuracy" checked>
+                    <span>准确率</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" name="metric" value="loss" checked>
+                    <span>损失</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" name="metric" value="f1">
+                    <span>F1分数</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" name="metric" value="recall">
+                    <span>召回率</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="form-checkbox text-primary" name="metric" value="precision">
+                    <span>精确率</span>
+                </label>
+            </div>
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <canvas id="metrics-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2025 联邦学习配置可视化工具 | 设计与开发</p>
+        </div>
+    </footer>
+
+    <!-- 成功提示 -->
+    <div id="success-toast" class="fixed bottom-4 right-4 bg-secondary text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-16 opacity-0 transition-all duration-300 flex items-center">
+        <i class="fa fa-check-circle mr-2"></i>
+        <span>操作成功!</span>
+    </div>
+
+    <script>
+        // 初始化页面逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            const algorithmSelect = document.getElementById('algorithm-select');
+            const loadDataBtn = document.getElementById('load-data-btn');
+            const chartCtx = document.getElementById('metrics-chart').getContext('2d');
+            
+            let metricsChart = null;
+            
+            // 加载数据按钮点击事件
+            loadDataBtn.addEventListener('click', async function() {
+                const algorithm = algorithmSelect.value;
+                try {
+                    const response = await fetch(`http://localhost:8081/result/${algorithm}`);
+                    const data = await response.json();
+                    
+                    // 处理数据并绘制图表
+                    updateChart(data);
+                    
+                    // 显示成功提示
+                    showToast('数据加载成功!');
+                } catch (error) {
+                    console.error('加载数据失败:', error);
+                    showToast('数据加载失败!', 'error');
+                }
+            });
+            
+            // 获取选中的指标
+            function getSelectedMetrics() {
+                const checkboxes = document.querySelectorAll('input[name="metric"]:checked');
+                return Array.from(checkboxes).map(cb => cb.value);
+            }
+            
+            // 全选/取消全选
+            document.getElementById('select-all').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[name="metric"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                if (metricsChart) {
+                    updateChart(lastData);
+                }
+            });
+            
+            // 单个指标选择变化
+            document.querySelectorAll('input[name="metric"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = document.querySelectorAll('input[name="metric"]:checked').length === 5;
+                    document.getElementById('select-all').checked = allChecked;
+                    if (metricsChart) {
+                        updateChart(lastData);
+                    }
+                });
+            });
+            
+            let lastData = null;
+            
+            // 更新图表函数
+            function updateChart(data) {
+                lastData = data;
+                // 按轮次和类型分组数据
+                const trainingData = data.filter(item => item.aggregationType === 'Training');
+                const validationData = data.filter(item => item.aggregationType === 'Validation');
+                
+                // 提取轮次作为x轴
+                const rounds = [...new Set(data.map(item => item.round))].sort((a, b) => a - b);
+                
+                // 销毁旧图表
+                if (metricsChart) {
+                    metricsChart.destroy();
+                }
+                
+                // 获取选中的指标
+                const selectedMetrics = getSelectedMetrics();
+                
+                // 创建数据集
+                const datasets = [];
+                
+                if (selectedMetrics.includes('accuracy')) {
+                    datasets.push({
+                        label: '训练准确率',
+                        data: trainingData.map(item => item.matrix.accuracy),
+                        borderColor: '#165DFF',
+                        backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '验证准确率',
+                        data: validationData.map(item => item.matrix.accuracy),
+                        borderColor: '#36D399',
+                        backgroundColor: 'rgba(54, 211, 153, 0.1)',
+                        tension: 0.1
+                    });
+                }
+                
+                if (selectedMetrics.includes('loss')) {
+                    datasets.push({
+                        label: '训练损失',
+                        data: trainingData.map(item => item.matrix.loss),
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '验证损失',
+                        data: validationData.map(item => item.matrix.loss),
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.1
+                    });
+                }
+                
+                if (selectedMetrics.includes('f1')) {
+                    datasets.push({
+                        label: 'F1分数',
+                        data: trainingData.map(item => item.matrix.f1),
+                        borderColor: '#9F7AEA',
+                        backgroundColor: 'rgba(159, 122, 234, 0.1)',
+                        tension: 0.1
+                    });
+                }
+                
+                if (selectedMetrics.includes('recall')) {
+                    datasets.push({
+                        label: '召回率',
+                        data: trainingData.map(item => item.matrix.recall),
+                        borderColor: '#ED8936',
+                        backgroundColor: 'rgba(237, 137, 54, 0.1)',
+                        tension: 0.1
+                    });
+                }
+                
+                if (selectedMetrics.includes('precision')) {
+                    datasets.push({
+                        label: '精确率',
+                        data: trainingData.map(item => item.matrix.precision),
+                        borderColor: '#4299E1',
+                        backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                        tension: 0.1
+                    });
+                }
+                
+                // 创建新图表
+                metricsChart = new Chart(chartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: rounds,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '训练指标变化'
+                            },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 显示提示信息
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('success-toast');
+                toast.querySelector('span').textContent = message;
+                
+                if (type === 'error') {
+                    toast.classList.remove('bg-secondary');
+                    toast.classList.add('bg-red-500');
+                } else {
+                    toast.classList.remove('bg-red-500');
+                    toast.classList.add('bg-secondary');
+                }
+                
+                toast.classList.remove('translate-y-16', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-16', 'opacity-0');
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
